@@ -1,0 +1,61 @@
+version: 'version'
+services:
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: e2ee
+      POSTGRES_USER: e2ee
+      POSTGRES_PASSWORD: e2ee-secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: ../backend
+    container_name: e2ee_web
+    command: daphne -b 0.0.0.0 -p 8001 e2ee_chat.asgi:application
+    env_file:
+      - ../backend/.env.prod
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - ../backend:/app
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend
+    container_name: e2ee_frontend
+    command: ["node", "server.js"]
+    env_file:
+      - ../frontend/.env.prod
+    restart: unless-stopped
+    volumes:
+      - ../frontend/dist:/usr/share/nginx/html:ro
+
+  nginx:
+    image: nginx:1.25
+    container_name: e2ee_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../frontend/dist:/usr/share/nginx/html:ro
+      - ../backend/static:/app/static:ro
+      # place TLS certs at ./nginx/ssl/
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  pgdata:
