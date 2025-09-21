@@ -1,4 +1,4 @@
-# Django E2EE Chat (Full Repo)
+# Django E2EE Chat 
 
 This repository is a demonstration E2EE one-to-one chat app:
 - Backend: Django + Django REST Framework + Channels (Daphne) — stores only public keys & ciphertexts.
